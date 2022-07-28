@@ -1,6 +1,5 @@
 const authService = require('./auth.service')
 const logger = require('../../services/logger.service')
-const cookieParser = require('cookie-parser')
 
 
 async function login(req, res) {
@@ -25,7 +24,6 @@ async function signup(req, res) {
         const loginToken = authService.getLoginToken(user)
         logger.info('User login: ', user)
         res.cookie('loginToken', loginToken)
-
         res.json(user)
     } catch (err) {
         logger.error('Failed to signup ' + err)
@@ -42,11 +40,11 @@ async function logout(req, res) {
     }
 }
 
-async function reissueToken(req, res) {
+async function issueToken(req, res) {
     const refreshToken = req.body.token
     if(!refreshToken) return res.sendStatus(401)
     try {
-        const newToken = await authService.reissueToken(refreshToken)
+        const newToken = await authService.issueToken(refreshToken)
         if(!newToken) return res.sendStatus(401)
         logger.info('Reissued token for user')
         res.send(newToken)
@@ -60,5 +58,6 @@ module.exports = {
     login,
     signup,
     logout,
-    reissueToken
+    issueToken,
+    issueRefreshToken
 }

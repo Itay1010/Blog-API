@@ -21,7 +21,7 @@ async function login(username, password) {
     user.lastLogin = Date.now()
     const savedUser = await userService.update(user, `lastLogin = ${user.lastLogin}`)
     // delete user._id
-    return [jwt.sign(savedUser, REFRESH_TOKEN_SECRET, { expiresIn: '30m' }), generateAccessToken(user)]
+    return [generateRefreshToken(savedUser._id), generateAccessToken(user)]
 }
 
 async function signup(username, password) {
@@ -56,23 +56,24 @@ async function validateAccessToken(accessToken) {
 }
 
 
-function generateAccessToken(user) {
-    return jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: '30m' })
+function generateAccessToken(user, expr = '15m') {
+    return jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: expr })
 }
 
-async function reissueToken(token) {
-    return jwt.verify(token, REFRESH_TOKEN_SECRET, async (error, userWithExtra) => {
-        if (error) {
-            logger.error('reissueToken', error)
-            return Promise.reject(error)
-        }
-        return generateAccessToken(
-            {
-                _id: userWithExtra._id,
-                username: userWithExtra.username,
-                createdAt: userWithExtra.createdAt,
-                lastLogin: userWithExtra.lastLogin
-            })
+function generateRefreshToken(userId, expr = '24h') {
+    return jwt.sign({ userId }, REFRESH_TOKEN_SECRET, { expiresIn: expr })
+}
+
+async function issueToken(token) {
+    return new Promise((resolve, reject) => {
+        jwt.verify(token, REFRESH_TOKEN_SECRET, async (error, userWithExtra) => {
+            if (error) {
+                logger.error('reissueToken', error)
+                reject(error)
+            }
+            const token = generateAccessToken(userWithExtra._id)
+            resolve(token)
+        })
     })
 }
 
@@ -81,5 +82,5 @@ module.exports = {
     login,
     getLoginToken,
     validateAccessToken,
-    reissueToken
+    issueToken
 }

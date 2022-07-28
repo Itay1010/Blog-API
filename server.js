@@ -27,12 +27,14 @@ if (process.env.NODE_ENV === 'production') {
 const authRoutes = require('./api/auth/auth.routes')
 const postRoutes = require('./api/post/post.routes')
 const userRoutes = require('./api/user/user.routes')
+const tokenRoutes = require('./api/token/token.routes')
 
 // routes
 
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
 app.use('/api/post', postRoutes)
+app.use('/api/token', tokenRoutes)
 
 app.get('/**', (req, res) => {
     res.sendFile(path.join(__dirname + 'public' + 'index.html'))
