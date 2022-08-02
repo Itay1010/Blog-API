@@ -1,6 +1,5 @@
 const userService = require('./user.service')
 const logger = require('../../services/logger.service')
-const { getDb } = require('../../services/db.service')
 
 async function getUser(req, res) {
     try {
@@ -38,7 +37,7 @@ async function deleteUser(req, res) {
 async function updateUser(req, res) {
     try {
         const user = req.body
-        const savedUser = await userService.update(user)
+        const savedUser = await userService.update(user, `username=${user.username}`)
         res.send(savedUser)
     } catch (err) {
         logger.error('Failed to update user', err)

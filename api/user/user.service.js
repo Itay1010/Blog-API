@@ -36,7 +36,6 @@ async function getById(userId) {
             db.query(queryTxt, (err, res, fields) => {
                 if (err) reject(err)
                 const userFull = { ...res[0] }
-                console.log('awaitdb.query - user', userFull)
                 resolve(userFull)
             })
         })
@@ -46,7 +45,7 @@ async function getById(userId) {
     }
 }
 async function getByUsername(username) {
-    const queryTxt = `SELECT * FROM user WHERE username=${username}`
+    const queryTxt = `SELECT * FROM user WHERE username="${username}"`
     try {
         const db = await dbService.getDb()
         return new Promise((resolve, reject) => {
@@ -79,9 +78,9 @@ async function remove(userId) {
     }
 }
 
-async function update(user) {
+async function update(user, fields) {
     // peek only updatable fields!
-    const queryTxt = `UPDATE user SET username=${user.username}, lastLogin=${user.lastLogin} WHERE _id=${user._id}`
+    const queryTxt = `UPDATE user SET ${fields} WHERE _id="${user._id}"`
     try {
         const db = await dbService.getDb()
         return new Promise((resolve, reject) => {

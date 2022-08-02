@@ -15,7 +15,6 @@
         "bcrypt": "^5.0.0",
         "cookie-parser": "^1.4.6",
         "cors": "^2.8.5",
-        "cryptr": "^6.0.3",
         "express": "^4.17.1",
         "firebase-admin": "^11.0.0",
         "jsonwebtoken": "^8.5.1",

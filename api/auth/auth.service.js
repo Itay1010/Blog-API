@@ -1,6 +1,4 @@
-const Cryptr = require('cryptr')
 const bcrypt = require('bcrypt')
-const cryptr = new Cryptr(process.env.SECRET1 || 'Secret-Puk-1234')
 const jwt = require('jsonwebtoken')
 const userService = require('../user/user.service')
 const logger = require('../../services/logger.service')
@@ -14,47 +12,42 @@ async function login(username, password) {
     const user = await userService.getByUsername(username)
     if (!user) return Promise.reject('Invalid username or password')
     // TODO: un-comment for real login
-    const match = await bcrypt.compare(password, user.password)
-    if (!match) return Promise.reject('Invalid username or password')
-
+    // const match = await bcrypt.compare(password, user.password)
+    // if (!match) return Promise.reject('Invalid username or password')
     delete user.password
     user.lastLogin = Date.now()
-    const savedUser = await userService.update(user, `lastLogin = ${user.lastLogin}`)
-    // delete user._id
-    return [generateRefreshToken(savedUser._id), generateAccessToken(user)]
+    await userService.update(user, `username="${user.username}", lastLogin=CURRENT_TIMESTAMP`)
+    return [generateRefreshToken(user._id), generateAccessToken(user)]
 }
 
 async function signup(username, password) {
     const saltRounds = 10
-
     logger.debug(`auth.service - signup with username: ${username}`)
     if (!username || !password) return Promise.reject('username and password are required!')
-
     const hash = await bcrypt.hash(password, saltRounds)
     return userService.add({ username, password: hash })
 }
 
-function getLoginToken(user) {
-    return cryptr.encrypt(JSON.stringify(user))
-}
-
+//Token service functions below 
 async function validateAccessToken(accessToken) {
-    return jwt.verify(accessToken, ACCESS_TOKEN_SECRET, (err, userWithExtra) => {
-        if (err) {
-            logger.error('Access token is invalid: ', err)
-            throw new Error(err)
-        }
-        return {
-            _id: userWithExtra._id,
-            username: userWithExtra.username,
-            createdAt: userWithExtra.createdAt,
-            lastLogin: userWithExtra.lastLogin
-        }
+    return new Promise((resolve, reject) => {
+        jwt.verify(accessToken, ACCESS_TOKEN_SECRET, (err, userWithExtra) => {
+            if (err) {
+                logger.error('Access token is invalid: ', err)
+                reject(new Error(err))
+            }
+            resolve({
+                _id: userWithExtra._id,
+                username: userWithExtra.username,
+                createdAt: userWithExtra.createdAt,
+                lastLogin: userWithExtra.lastLogin
+            })
+
+        })
 
     })
 
 }
-
 
 function generateAccessToken(user, expr = '15m') {
     return jwt.sign(user, ACCESS_TOKEN_SECRET, { expiresIn: expr })
@@ -66,12 +59,23 @@ function generateRefreshToken(userId, expr = '24h') {
 
 async function issueToken(token) {
     return new Promise((resolve, reject) => {
-        jwt.verify(token, REFRESH_TOKEN_SECRET, async (error, userWithExtra) => {
+        jwt.verify(token, REFRESH_TOKEN_SECRET, async (error, userIdWithExtra) => {
             if (error) {
                 logger.error('reissueToken', error)
                 reject(error)
             }
-            const token = generateAccessToken(userWithExtra._id)
+            const rawUser = await userService.getById(userIdWithExtra.userId)
+            if (!rawUser) {
+                logger.error('Failed to reissue token, user undefined')
+                reject(new Error('Failed to reissue token, user undefined'))
+            }
+            const user = {
+                _id: rawUser._id,
+                username: rawUser.username,
+                createdAt: rawUser.createdAt,
+                lastLogin: rawUser.lastLogin
+            }
+            const token = generateAccessToken(user)
             resolve(token)
         })
     })
@@ -80,7 +84,6 @@ async function issueToken(token) {
 module.exports = {
     signup,
     login,
-    getLoginToken,
     validateAccessToken,
     issueToken
 }

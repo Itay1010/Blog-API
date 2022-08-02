@@ -5,13 +5,13 @@ const { getPosts, getPostById, addPost, updatePost, removePost } = require('./po
 const router = express.Router()
 
 // middleware that is specific to this router
-// router.use(requireToken)
+router.use(requireToken)
 
-router.get('/', log, requireToken, getPosts)
-router.get('/:id', requireToken, getPostById)
-router.post('/', requireToken, requireAdmin, addPost)
-router.put('/:id', requireToken, requireAdmin, updatePost)
-router.delete('/:id', requireToken, requireAdmin, removePost)
+router.get('/', getPosts)
+router.get('/:id', getPostById)
+router.post('/', addPost)
+router.put('/:id', updatePost)
+router.delete('/:id', requireAdmin, removePost)
 // debug routes
 // router.post('/', addPost)
 // router.put('/:id', updatePost)
