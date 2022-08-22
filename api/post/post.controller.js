@@ -5,7 +5,7 @@ const logger = require('../../services/logger.service')
 async function getPosts(req, res) {
   try {
     logger.debug('Getting Posts')
-    var queryParams = req.query
+    const queryParams = req.query
     const posts = await postService.query(queryParams)
     res.json(posts);
   } catch (err) {
@@ -42,8 +42,8 @@ async function addPost(req, res) {
 // PUT (Update post)
 async function updatePost(req, res) {
   try {
-    const post = req.body;
-    const updatedPost = await postService.update(post)
+    const postField = req.body;
+    const updatedPost = await postService.update(postField)
     res.json(updatedPost)
   } catch (err) {
     logger.error('Failed to update post', err)

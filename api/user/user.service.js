@@ -97,11 +97,10 @@ async function update(user, fields) {
 }
 
 async function add(user) {
-
-    const queryTxt = `INSERT INTO user (username, password) VALUES (${user.username, user.password})`
+    const queryTxt = `INSERT INTO user (_id, username, password) VALUES (UUID(), '${user.username}', '${user.password}')`
     try {
-        return new Promise((resolve, reject) => {
-            const db = dbService.getDb()
+        return new Promise(async (resolve, reject) => {
+            const db = await dbService.getDb()
             db.query(queryTxt, ((err, res, fields)=>{
                 if(err) reject(err)
                 resolve(res)

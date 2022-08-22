@@ -26,14 +26,14 @@ async function connect() {
     try {
         const db = mySql.createConnection(config.sqlCred)
         db.connect((err) => {
-            if (err) throw err;
+            if (err) throw err
             console.log('Connected to DB');
         });
         dbConn = db
         return dbConn
     } catch (err) {
         logger.error('Cannot Connect to DB', err)
-        throw err
+        throw new Error(err)
     }
 }
 

@@ -5,10 +5,14 @@ const ObjectId = require('mongodb').ObjectId
 async function query(filterBy) {
     try {
         const criteria = _buildCriteria(filterBy)
-        const pageSkip = filterBy.page - 1 === 0 ? 0 : (+filterBy.page - 1) * 4
-        const collection = await dbService.getCollection('post')
-        var posts = await collection.find(criteria).skip(pageSkip).limit(4).toArray()
-        return posts
+        const queryStr = `SELECT * FROM post ${criteria}`
+        const db = await dbService.getDb()
+        return new Promise((resolve, reject) => {
+            db.query(queryStr, (err, result, fields) => {
+                if (err) reject(err)
+                resolve(result)
+            })
+        })
     } catch (err) {
         logger.error('cannot find posts', err)
         throw err
@@ -39,20 +43,32 @@ async function remove(postId) {
 
 async function add(post) {
     try {
-        const collection = await dbService.getCollection('post')
-        const addedCar = await collection.insertOne(post)
-        return addedCar
+        const { title, description, body, imgUrl } = post
+        const db = await dbService.getDb()
+        const queryStr = `INSERT INTO post (title, description, body, imgUrl) VALUES (${title}, ${description}, ${body}, ${imgUrl})`
+        return new Promise((resolve, reject) => {
+            db.query(queryStr, (err, result, fields) => {
+                if (err) reject(err)
+                resolve(result)
+            })
+        })
     } catch (err) {
         logger.error('cannot insert post', err)
         throw err
     }
 }
-async function update(post) {
+async function update(postField) {
     try {
-        var id = ObjectId(post._id)
-        delete post._id
-        const collection = await dbService.getCollection('post')
-        await collection.updateOne({ _id: id }, { $set: { ...post } })
+        const db = await dbService.getDb()
+        const queryStr = `UPDATE post SET ${Object.keys(postField).map(field => {
+            if (field !== '_id') return `${field} = ${postField[field]}`
+        })}`
+        return new Promise((resolve, reject) => {
+            db.query(queryStr, (err, result, fields) => {
+                if (err) reject(err)
+                resolve(result)
+            })
+        })
         return post
     } catch (err) {
         logger.error(`cannot update post ${postId}`, err)
@@ -60,13 +76,13 @@ async function update(post) {
     }
 }
 
-function _buildCriteria({ txt, inStock, label, page }) {
-    const criteria = {}
-    const pageSkip = 4
-    const reg = { $regex: txt, $options: 'i' }
-    if (txt) criteria.name = reg
-    if (inStock !== '') criteria.inStock = JSON.parse(inStock)
-    // if (+page) criteria.skip = +page - 1 === 0 ? 0 : (+page - 1) * 4
+function _buildCriteria({ txt, count, page, orderBy }) {
+    let criteria = ' '
+    if (orderBy) criteria += `ORDER BY ${orderBy} `
+    else if (page)`ORDER BY createdAt `
+    if (count) criteria += `LIMIT ${count} `
+    if (page & count) criteria += `OFFSET ${page} `
+    if (txt) criteria += `WHERE MATCH(title, description) AGAINST ('${txt}' IN BOOLEAN MODE) `
     return criteria
 }
 
